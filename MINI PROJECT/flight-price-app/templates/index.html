@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flight Price Predictor</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --ink: #0b0b0b; --muted: #5c5b57; --line: #e3e2de;
+    --accent: #2a78d6; --accent-ink: #ffffff; --chip: #eef3fb; --chip-ink: #1d4f8f;
+    --warn-bg: #fdf1e7; --warn-ink: #8a3b12;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141413; --card: #1d1d1b; --ink: #f0efec; --muted: #b4b3aa; --line: #34332f;
+      --accent: #3987e5; --accent-ink: #0b0b0b; --chip: #1f2a3a; --chip-ink: #a9c8f2;
+      --warn-bg: #3a2418; --warn-ink: #f1b894;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; font-size: .95rem; }
+  form, #result { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .full { grid-column: 1 / -1; }
+  label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+  select, input { width: 100%; padding: 10px 12px; font: inherit; color: var(--ink); background: var(--card);
+                  border: 1px solid var(--line); border-radius: 8px; }
+  select:focus, input:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dur { display: flex; gap: 8px; align-items: center; }
+  .dur span { color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { font: inherit; font-size: .8rem; padding: 3px 10px; border-radius: 999px; border: 0;
+          background: var(--chip); color: var(--chip-ink); cursor: pointer; }
+  .chip.static { cursor: default; }
+  button.go { margin-top: 18px; width: 100%; padding: 12px; font: inherit; font-weight: 600; border: 0;
+              border-radius: 8px; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+  button.go:disabled { opacity: .6; cursor: wait; }
+  #result { margin-top: 16px; display: none; }
+  .price { font-size: 2.4rem; font-weight: 700; line-height: 1.1; }
+  .err { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 10px 12px; }
+  .err ul { margin: 0; padding-left: 18px; }
+  .foot { color: var(--muted); font-size: .8rem; margin-top: 18px; }
+  @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Flight Price Predictor</h1>
+  <p class="sub">Estimate a domestic Indian economy fare from the route, date, time of day and stops.</p>
+
+  <form id="form" autocomplete="off">
+    <div class="grid">
+      <div><label for="airline">Airline</label><select id="airline" required></select></div>
+      <div><label for="stops">Stops</label>
+        <select id="stops">
+          <option value="0">Non-stop</option><option value="1" selected>1 stop</option>
+          <option value="2">2 stops</option><option value="3">3 stops</option>
+        </select></div>
+      <div><label for="source">From</label><select id="source" required></select></div>
+      <div><label for="destination">To</label><select id="destination" required></select></div>
+      <div class="full">
+        <label for="date">Journey date <span id="range"></span></label>
+        <input type="date" id="date" required>
+        <div class="chips" id="festivals" aria-label="Festival dates, click to use"></div>
+      </div>
+      <div><label for="dep">Departure time</label><input type="time" id="dep" value="09:30" required></div>
+      <div><label for="hours">Flight duration</label>
+        <div class="dur">
+          <input type="number" id="hours" min="0" max="47" value="3" required aria-label="hours"><span>h</span>
+          <input type="number" id="mins" min="0" max="59" value="0" required aria-label="minutes"><span>m</span>
+        </div></div>
+      <div class="full"><label for="extras">Extras</label><select id="extras"></select></div>
+    </div>
+    <button class="go" id="go" type="submit">Predict price</button>
+  </form>
+
+  <section id="result" aria-live="polite"></section>
+  <p class="foot" id="foot"></p>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let META = null;
+
+function fill(select, values, labelFn) {
+  select.innerHTML = values.map(v => `<option value="${v}">${labelFn ? labelFn(v) : v}</option>`).join("");
+}
+function updateDestinations() { fill($("destination"), META.routes[$("source").value]); }
+const fmt = n => "₹" + n.toLocaleString("en-IN");
+const nice = iso => new Date(iso + "T00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+async function init() {
+  META = await (await fetch("/meta")).json();
+  fill($("airline"), META.airlines);
+  fill($("source"), Object.keys(META.routes));
+  $("source").value = "Bengaluru";
+  updateDestinations();
+  fill($("extras"), META.extras);
+  const [lo, hi] = META.date_range;
+  $("date").min = lo; $("date").max = hi;
+  $("date").value = META.festivals.find(f => f.name === "Good Friday")?.date || lo;
+  $("range").textContent = `(${nice(lo)} – ${nice(hi)} 2019)`;
+  $("festivals").innerHTML = META.festivals.map(f =>
+    `<button type="button" class="chip" data-date="${f.date}">${f.name} · ${nice(f.date)}</button>`).join("");
+  $("foot").textContent = `Model: ${META.model} · typical error ≈ ${fmt(Math.round(META.metrics.mae))} · ` +
+    `trained on 2019 fares, so only dates in the range above are accepted.`;
+}
+
+$("source").addEventListener("change", updateDestinations);
+$("festivals").addEventListener("click", e => { if (e.target.dataset.date) $("date").value = e.target.dataset.date; });
+
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const body = {
+    airline: $("airline").value, source: $("source").value, destination: $("destination").value,
+    journey_date: $("date").value, dep_time: $("dep").value, stops: +$("stops").value, extras: $("extras").value,
+    duration_mins: (+$("hours").value) * 60 + (+$("mins").value),
+  };
+  $("go").disabled = true; $("go").textContent = "Predicting…";
+  const box = $("result"); box.style.display = "block";
+  try {
+    const res = await fetch("/predict", { method: "POST", headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) {
+      box.innerHTML = `<div class="err"><ul>${data.errors.map(m => `<li>${m}</li>`).join("")}</ul></div>`;
+    } else {
+      const f = data.factors, chips = [];
+      if (f.is_weekend) chips.push("Weekend");
+      if (f.is_peak_hour) chips.push("Peak-hour departure");
+      if (f.is_summer_peak) chips.push("Summer season");
+      if (f.near_festival) chips.push(f.days_to_festival === 0 ? `${f.nearest_festival} today`
+        : `${f.days_to_festival} day${f.days_to_festival > 1 ? "s" : ""} from ${f.nearest_festival}`);
+      box.innerHTML = `<div class="sub" style="margin:0">Estimated fare</div>
+        <div class="price">${fmt(data.predicted_price_inr)}</div>
+        <div class="sub">Typically within about ±${fmt(data.typical_error_inr)}</div>
+        <div class="chips">${chips.map(c => `<span class="chip static">${c}</span>`).join("") ||
+          '<span class="chip static">No peak-time or festival flags</span>'}</div>`;
+    }
+  } catch (err) {
+    box.innerHTML = `<div class="err">Could not reach the server. Is the API running?</div>`;
+  } finally {
+    $("go").disabled = false; $("go").textContent = "Predict price";
+  }
+});
+
+init().catch(() => { $("foot").textContent = "Could not load options from the API."; });
+</script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+{
+  "best_model": "Random Forest",
+  "metrics": {
+    "mae": 743.9,
+    "rmse": 1560.3,
+    "r2": 0.8834
+  },
+  "all_results": {
+    "Linear Regression": {
+      "baseline": {
+        "mae": 1786.8,
+        "rmse": 2620.5,
+        "r2": 0.6712
+      }
+    },
+    "Random Forest": {
+      "baseline": {
+        "mae": 708.8,
+        "rmse": 1567.7,
+        "r2": 0.8823
+      },
+      "tuned": {
+        "mae": 743.9,
+        "rmse": 1560.3,
+        "r2": 0.8834
+      },
+      "best_params": {
+        "n_estimators": 250,
+        "min_samples_leaf": 1,
+        "max_features": 0.6,
+        "max_depth": 15
+      },
+      "cv_rmse": 1535.4
+    },
+    "Gradient Boosting": {
+      "baseline": {
+        "mae": 1274.5,
+        "rmse": 2063.8,
+        "r2": 0.7961
+      },
+      "tuned": {
+        "mae": 813.0,
+        "rmse": 1563.5,
+        "r2": 0.883
+      },
+      "best_params": {
+        "learning_rate": 0.1,
+        "max_depth": 5,
+        "n_estimators": 400
+      },
+      "cv_rmse": 1543.9
+    }
+  },
+  "ablation": {
+    "1_route_airline_stops_duration_only": {
+      "cv_rmse": 2417.3,
+      "mae": 1423.7,
+      "rmse": 2399.9,
+      "r2": 0.7243
+    },
+    "2_plus_raw_date_and_departure_time": {
+      "cv_rmse": 1496.4,
+      "mae": 743.4,
+      "rmse": 1556.2,
+      "r2": 0.8841
+    },
+    "3_plus_peak_and_festival_flags": {
+      "cv_rmse": 1508.6,
+      "mae": 743.9,
+      "rmse": 1560.3,
+      "r2": 0.8834
+    }
+  },
+  "top_features": {
+    "Duration_Mins": 0.3583,
+    "Total_Stops": 0.1361,
+    "Airline_Jet Airways": 0.0806,
+    "Journey_Day": 0.0704,
+    "Additional_Info_In-flight meal not included": 0.056,
+    "Journey_Month": 0.0416,
+    "Dep_Hour": 0.0338,
+    "Dep_Minute": 0.0274,
+    "Airline_IndiGo": 0.0265,
+    "Additional_Info_No info": 0.0254
+  },
+  "cleaning_log": {
+    "raw_rows": 10683,
+    "missing_values_before": {
+      "Route": 1,
+      "Total_Stops": 1
+    },
+    "duplicates_dropped": 220,
+    "total_stops_imputed": 1,
+    "rare_airlines_dropped": {
+      "Multiple carriers Premium economy": 13,
+      "Jet Airways Business": 6,
+      "Vistara Premium economy": 3,
+      "Trujet": 1
+    },
+    "bad_duration_dropped": 1,
+    "final_rows": 10439
+  },
+  "train_rows": 8351,
+  "test_rows": 2088,
+  "date_range": [
+    "2019-03-01",
+    "2019-06-27"
+  ],
+  "duration_range_mins": [
+    75,
+    2860
+  ],
+  "airlines": [
+    "Air Asia",
+    "Air India",
+    "GoAir",
+    "IndiGo",
+    "Jet Airways",
+    "Multiple carriers",
+    "SpiceJet",
+    "Vistara"
+  ],
+  "extras": [
+    "No info",
+    "In-flight meal not included",
+    "No check-in baggage included"
+  ],
+  "routes": {
+    "Bengaluru": [
+      "Delhi"
+    ],
+    "Chennai": [
+      "Kolkata"
+    ],
+    "Delhi": [
+      "Cochin"
+    ],
+    "Kolkata": [
+      "Bengaluru"
+    ],
+    "Mumbai": [
+      "Hyderabad"
+    ]
+  },
+  "festivals": [
+    {
+      "date": "2019-03-04",
+      "name": "Maha Shivaratri"
+    },
+    {
+      "date": "2019-03-21",
+      "name": "Holi"
+    },
+    {
+      "date": "2019-04-06",
+      "name": "Ugadi / Gudi Padwa"
+    },
+    {
+      "date": "2019-04-13",
+      "name": "Ram Navami / Baisakhi"
+    },
+    {
+      "date": "2019-04-14",
+      "name": "Ambedkar Jayanti / Tamil New Year"
+    },
+    {
+      "date": "2019-04-17",
+      "name": "Mahavir Jayanti"
+    },
+    {
+      "date": "2019-04-19",
+      "name": "Good Friday"
+    },
+    {
+      "date": "2019-05-01",
+      "name": "Labour Day"
+    },
+    {
+      "date": "2019-05-18",
+      "name": "Buddha Purnima"
+    },
+    {
+      "date": "2019-06-05",
+      "name": "Eid al-Fitr"
+    }
+  ]
+}
